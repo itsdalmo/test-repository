@@ -1,0 +1,31 @@
+jobs:
+  - name: test
+    plan:
+    - aggregate:
+      - get: test-repository
+        trigger: true
+        version: every
+    - task: placeholder
+      config:
+        platform: linux
+        image_resource:
+          type: docker-image
+          source: {repository: alpine, tag: "3.5"}
+        run:
+          path: echo
+          args: ["HELLO, WORLD!"]
+
+resource_types:
+  - name: pull-request
+    type: docker-image
+    source:
+      repository: itsdalmo/github-pr-resource
+
+resources:
+  - name: test-repository
+    type: pull-request
+    check_every: 1m
+    source:
+      repository: itsdalmo/test-repository
+      context: concourse-ci/status
+      access_token: ((github-access-token))
