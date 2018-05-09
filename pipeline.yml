@@ -1,10 +1,14 @@
 jobs:
   - name: test
     plan:
-    - aggregate:
-      - get: test-repository
-        trigger: true
-        version: every
+    - get: pull-request
+      trigger: true
+      version: every
+    - put: pull-request
+      params:
+        path: pull-request
+        context: build
+        status: pending
     - task: placeholder
       config:
         platform: linux
@@ -12,8 +16,17 @@ jobs:
           type: docker-image
           source: {repository: alpine, tag: "3.5"}
         run:
-          path: echo
-          args: ["HELLO, WORLD!"]
+          path: /bin/sh
+          args:
+            - -xce
+            - |
+              sleep 30
+              echo "HELLO, WORLD!"
+    - put: pull-request
+      params:
+        path: pull-request
+        context: build
+        status: success
 
 resource_types:
   - name: pull-request
@@ -22,7 +35,7 @@ resource_types:
       repository: itsdalmo/github-pr-resource
 
 resources:
-  - name: test-repository
+  - name: pull-request
     type: pull-request
     check_every: 1m
     source:
