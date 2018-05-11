@@ -1,12 +1,16 @@
 jobs:
   - name: test
     plan:
-    - get: test-pull-request
+    - get: old-resource
       trigger: true
       version: every
-    - put: test-pull-request
+      params: { fetch_merge: true }
+    - get: new-resouce
+      trigger: true
+      version: every
+    - put: new-resouce
       params:
-        path: test-pull-request
+        path: new-resouce
         context: build
         status: pending
     - task: placeholder
@@ -14,31 +18,47 @@ jobs:
         platform: linux
         image_resource:
           type: docker-image
-          source: {repository: alpine, tag: "3.5"}
+          source: {repository: alpine/git, tag: "latest"}
         inputs:
-          - name: test-pull-request
+          - name: new-resouce
+          - name: old-resource
         run:
           path: /bin/sh
           args:
             - -xce
             - |
-              sleep 30
-              ls -la test-pull-request
-    - put: test-pull-request
+              echo "NEW RESOURCE:"
+              cat new-resource/README.md
+              echo ""
+              echo "OLD RESOURCE:"
+              cat old-resource/README.md
+    - put: new-resouce
       params:
-        path: test-pull-request
+        path: new-resouce
         context: build
         status: success
 
 resource_types:
-  - name: pull-request
+  - name: new-pull-request
     type: docker-image
     source:
       repository: itsdalmo/github-pr-resource
+  - name: old-pull-request
+    type: docker-image
+    source:
+      repository: jtarchie/pr
 
 resources:
-  - name: test-pull-request
-    type: pull-request
+  - name: old-resource
+    type: old-pull-request
+    source:
+      repo: itsdalmo/test-repository
+      uri: git@github.com:itsdalmo/test-repository.git
+      access_token: ((github-access-token))
+      private_key: ((divx-concourse-tasks-deploy-key))
+
+  - name: new-resouce
+    type: new-pull-request
     source:
       repository: itsdalmo/test-repository
       context: concourse-ci/status
